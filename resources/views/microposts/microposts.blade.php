@@ -31,6 +31,7 @@
                             @endif
                         </div>
                     </div>
+                @include('favorite_micropost.favorite_button')
                 </li>
             @endforeach
         </ul>

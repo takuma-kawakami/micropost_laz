@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\UserRequest;
 
 use Illuminate\Support\Facades\Auth;                        // 追加
 use App\Models\User;                                        // 追加
 use App\Models\Micropost; 
+use Storage; 
 
 class UsersController extends Controller
 {
     public function index()                                 // 追加       
-    {                                                       // 追加
+    {       
+        // 追加
         // ユーザ一覧をidの降順で取得
         $users = User::orderBy('id', 'desc')->paginate(10); // 追加
 
@@ -19,7 +22,8 @@ class UsersController extends Controller
         return view('users.index', [                        // 追加
             'users' => $users,                              // 追加
         ]);                                                 // 追加
-    }                                                       // 追加
+    }     
+    
     
     public function show($id)
     {
@@ -96,4 +100,47 @@ class UsersController extends Controller
             'microposts' => $favorites,
         ]);
     }
+    
+    public function update($id, UserRequest $request) {
+        $user = Auth::user();
+        $form = $request->all();
+
+        $profileImage = $request->file('profile_image');
+        if ($profileImage != null) {
+            $form['profile_image'] = $this->saveProfileImage($profileImage, $id); // return file name
+        }
+
+        unset($form['_token']);
+        unset($form['_method']);
+        $user->fill($form)->save();
+        return redirect('/home');
+    }
+      
+    public function edit($id) {
+        $user = Auth::user();
+        return view('users.edit', ['user' => $user]);
+    }
+    
+    public function profile() {
+        $user = User::findOrFail($id);        
+        return view('profile', ['user' => $user]);
+    }
+    
+    private function saveProfileImage($image, $id) {
+        // get instance
+        // $img = \Image::make($image);
+        // resize
+        /*
+        $img->fit(100, 100, function($constraint){
+            $constraint->upsize(); 
+        });
+        */
+        // save
+        $file_name = 'profile_'.$id.'.'.$image->getClientOriginalExtension();
+        $save_path = 'public/profiles/'.$file_name;
+        Storage::put($save_path, (string) $image->encode());
+        // return file name
+        return $file_name;
+    }
+        
 }
